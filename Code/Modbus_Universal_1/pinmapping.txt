@@ -1,0 +1,10 @@
+SW1_OUT => Kühlschrank
+SW1_IN  => Kühlschrank Status
+SW2_OUT => Licht
+SW2_IN  => Lichtschalter
+SW3_OUT => Steckdose links
+SW3_IN  => Steckdose links Status
+SW4_OUT => Steckdose rechts
+SW4_IN  => Steckdose rechts Status
+SW5_OUT => Lichterkette
+SW5_IN  => Lichterkette Schalter
