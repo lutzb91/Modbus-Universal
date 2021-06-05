@@ -22,8 +22,11 @@ class Output {
         uint8_t outPin;
         bool relaisOn = false;
         bool checkToggle = false;
+        bool waitToggle = false;
         unsigned long toggleAt = 0;
+        unsigned long waitUntil = 0;
 
         void startToggle();
         void endToggle();
+        void waitAfterToggle();
 };

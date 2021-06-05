@@ -10,19 +10,20 @@ void Output::begin(uint8_t outPin, uint8_t inPin, Modbus *modbus, uint8_t offset
     this->mb = modbus;
     this->mb->addCoil(COIL_SWITCH(offset), digitalRead(inPin));
     this->mb->addCoil(COIL_MODE(offset), switchMode);
-    this->btn = new Button(inPin, 25U, false);
+    this->btn = new Button(inPin, 25U, false, false);
     this->btn->begin();
 }
 
 void Output::task() {
+    this->switchMode = this->mb->Coil(COIL_MODE(this->offset));
     this->btn->read();
     if(this->switchMode) { // Switch Mode
         if(this->mb->Coil(COIL_SWITCH(this->offset))) { // Schalter soll an
-            if(this->btn->isReleased()) { // released = OFF, also anschalten
+            if(this->btn->isReleased() && !this->waitToggle) { // released = OFF, also anschalten
                 startToggle();
             }
         } else if(!this->mb->Coil(COIL_SWITCH(this->offset))) { // Schalter soll aus
-            if(this->btn->isPressed()) { // pressed = ON, also ausschalten
+            if(this->btn->isPressed() && !this->waitToggle) { // pressed = ON, also ausschalten
                 startToggle();
             }
         }
@@ -33,7 +34,7 @@ void Output::task() {
                 digitalWrite(this->outPin, HIGH);
                 this->relaisOn = true;
             }
-        } else if(this->mb->Coil(COIL_SWITCH(this->offset))) { // Relais soll aus
+        } else if(!this->mb->Coil(COIL_SWITCH(this->offset))) { // Relais soll aus
             if(this->relaisOn) { // Relais aktuell an
                 digitalWrite(this->outPin, LOW);
                 this->relaisOn = false;
@@ -47,12 +48,23 @@ void Output::task() {
         }
     }
     endToggle();
+    waitAfterToggle();
+}
+
+void Output::waitAfterToggle() {
+    if(this->waitToggle) {
+        if((long)(millis() - this->waitUntil) >= 0) {
+            this->waitToggle = false;
+        }
+    }
 }
 
 void Output::startToggle() {
-    digitalWrite(this->outPin, HIGH);
-    this->checkToggle = true;
-    this->toggleAt = millis() + 200; // In x Millisekunden wieder ausschalten 
+    if(!this->checkToggle) {
+        digitalWrite(this->outPin, HIGH);
+        this->checkToggle = true;
+        this->toggleAt = millis() + 200; // In x Millisekunden wieder ausschalten 
+    }
 }
 
 void Output::endToggle() {
@@ -60,6 +72,8 @@ void Output::endToggle() {
         if((long)(millis() - this->toggleAt) >= 0) {
             digitalWrite(this->outPin, LOW);
             this->checkToggle = false;
+            this->waitUntil = millis() + 200;
+            this->waitToggle = true;
         }
     }
 }
